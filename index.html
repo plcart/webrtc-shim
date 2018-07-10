@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebRTC Shim</title>
+    <link rel="stylesheet" href="style/main.css">
+</head>
+
+<body>
+    <div class="overlay">
+        <div class="username-container">
+            <input type="text" class="username" id="alias">
+            <button id="btnJoin" class="btn-join">Join</button>
+        </div>
+    </div>
+    <div class="users-container">
+        <div class="app-title">
+            <h2>WebRTC Shim</h2>
+        </div>
+        <ul class="online-users">
+            <li class="online-user">
+
+            </li>
+        </ul>
+        <div class="incoming-call">
+
+        </div>
+    </div>
+    <div class="container">
+        <div class="controls">
+            <div class="drop"></div>
+        </div>
+        <div class="local-video-container">
+            <video src="" id="localVideo" autoplay muted></video>
+        </div>
+        <div class="remote-video-container">
+            <video src="" id="remoteVideo" autoplay></video>
+        </div>
+        <div class="data-channel-container">
+
+        </div>
+    </div>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/all.js" integrity="sha384-xymdQtn1n3lH2wcu0qhcdaOpQwyoarkgLVxC/wZ5q7h9gHtxICrpcaSUfygqZGOe"
+        crossorigin="anonymous"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="vendors/webrtc-shim.min.js"></script>
+    <script src="src/index.js"></script>
+</body>
+
+</html>
