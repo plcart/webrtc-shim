@@ -15,6 +15,9 @@
     const socket = io.connect('http://vctalksocket-env.u5facjqxpk.eu-west-2.elasticbeanstalk.com');
     const RTCClient = new window.WebRTCShim(message => {
         socket.emit('rtcmessage', message);
+    }, message => {
+
+
     }, remoteStream => {
         remoteVideo.srcObject = remoteStream;
     });
@@ -77,5 +80,5 @@
             localVideoContainer.classList.add('on-call');
         }
     });
-  
+
 })(window);
