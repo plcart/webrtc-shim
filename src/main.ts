@@ -4,22 +4,36 @@ const pc_config = {
     }]
 }
 
+interface WebRTCShimPeerConnection extends RTCPeerConnection {
+    createDataChannel(channel: string, constraint: any);
+    ondatachannel: (this: RTCPeerConnection, ev: { channel: WebRTCShimDataChannel }) => any;
+}
+
+interface WebRTCShimDataChannel {
+    onopen: (this: WebRTCShimDataChannel) => any;
+    onclose: (this: WebRTCShimDataChannel) => any;
+    onmessage: (this: WebRTCShimDataChannel, ev: any) => any;
+    send(value: any);
+    readyState: 'open' | string;
+}
+
 export class WebRTCShim {
-    peerConnection: RTCPeerConnection;
+    peerConnection: WebRTCShimPeerConnection;
     localStream: MediaStream;
     remoteStream: MediaStream;
     isStarted: boolean = false;
+    dataChannel: WebRTCShimDataChannel;
 
     constructor(
-        private messageCallbackFn: (message: RTCSessionDescriptionInit | any) => void,
-        private remoteStreamCallbackFn: (stream: MediaStream) => void,
+        private messageCallbackFn: (message: RTCSessionDescriptionInit | any) => any,
+        private dataChannelCallbackFn: (value: any) => any,
+        private remoteStreamCallbackFn: (stream: MediaStream) => any,
         public pcConfig: RTCConfiguration = pc_config) {
         this.peerConnection = this.createPeerConnection(pc_config);
-
     }
 
-    createPeerConnection(pcConfig = pc_config): RTCPeerConnection {
-        let pc = new RTCPeerConnection(pc_config);
+    createPeerConnection(pcConfig = pc_config): WebRTCShimPeerConnection {
+        let pc = new RTCPeerConnection(pc_config) as WebRTCShimPeerConnection;
 
         pc.onaddstream = event => {
             this.remoteStream = event.stream;
@@ -42,7 +56,12 @@ export class WebRTCShim {
             }
         };
 
-        return pc;
+        pc.ondatachannel = event => {
+            this.dataChannel = event.channel;
+            this.configDataChannel();
+        }
+
+        return pc as WebRTCShimPeerConnection;
     }
 
     addLocalStream(stream: MediaStream): void {
@@ -57,6 +76,8 @@ export class WebRTCShim {
     }
 
     doCall(): void {
+        this.dataChannel = this.peerConnection.createDataChannel('data', null);
+        this.configDataChannel();
         this.peerConnection.createOffer().then((description) => {
             this.setLocalAndSendMessage(description);
         }).catch(err => console.log(err));
@@ -68,12 +89,29 @@ export class WebRTCShim {
         }).catch(err => console.log(err));
     }
 
+    configDataChannel() {
+        if (this.dataChannel) {
+            this.dataChannel.onopen = () => { };
+            this.dataChannel.onclose = () => { };
+            this.dataChannel.onmessage = value => {
+                this.dataChannelCallbackFn(value);
+            };
+        }
+    }
+
+    send(value: any) {
+        if (this.dataChannel && this.dataChannel.readyState === 'open') {
+            this.dataChannel.send(value);
+        }
+    }
+
     stop(): void {
         this.isStarted = false;
         if (this.peerConnection) {
             this.peerConnection.close();
         }
         this.peerConnection = null;
+        this.dataChannel = null;
     }
 
     hangup(): void {
