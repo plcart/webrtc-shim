@@ -1,5 +1,5 @@
 {
-  "name": "wavcoder",
+  "name": "webrtc-shim",
   "version": "1.0.0",
   "description": "WebRTC shim",
   "main": "src/main.ts",
