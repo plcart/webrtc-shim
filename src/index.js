@@ -1,84 +1,75 @@
 /* jshint undef: true, unused: false, esversion: 6 */
-/* globals io */
+
 (function (window) {
 
     /** DOM */
-    const btnJoin = document.querySelector('#btnJoin');
-    const txtAlias = document.querySelector('#alias');
-    const userOverlay = document.querySelector('.overlay');
-    const ulOnlineUsers = document.querySelector('ul.online-users');
-    const localVideo = document.querySelector('#localVideo');
-    const remoteVideo = document.querySelector('#remoteVideo');
-    const localVideoContainer = document.querySelector('.local-video-container');
+    const btnMakeOffer = document.querySelector('#btnMakeOffer');
+    const btnSendData = document.querySelector('#btnSendData ');
+    const localStream = document.querySelector('#localStream');
+    const remoteStream = document.querySelector('#remoteStream');
 
-    /** WebRTC Variables */
-    const socket = io.connect('http://vctalksocket-env.u5facjqxpk.eu-west-2.elasticbeanstalk.com');
-    const RTCClient = new window.WebRTCShim(message => {
-        socket.emit('rtcmessage', message);
-    }, message => {
+    /** WebRTCShim constants */
+    const rtcLeftClient = new window.WebRTCShim(
+        rtcMessage => {
+            /** here is the callback function of any offer, anwer or candidate
+             * you could easily send to you socket structure like
+             * socket.emit('rtcmessage', rtcmessage);
+             * here we gonna pass to the other peer directly
+             * */
+            rtcRightClient.onMessage(rtcMessage);
+        },
+        dataChannel => {
+            /** here is your data channel callback */
+            console.log(dataChannel.data);
+            localStream.classList.add('add-some-video-style');
+        },
+        stream => {
+            /** Here is where you gonna receive the other peer stream 
+             * nothing to do here in this example
+             */
+        });
 
+    /** Same goes for the other client */
+    const rtcRightClient = new window.WebRTCShim(
+        rtcMessage => {
+            /** just fowarding the message */
+            rtcLeftClient.onMessage(rtcMessage);
+        },
+        dataChannel => {
 
-    }, remoteStream => {
-        remoteVideo.srcObject = remoteStream;
-    });
-    const state = {
-        alias: null,
-        isAvailable: true,
-        peerId: null,
-        room: null,
-        isInitiator: false
+        },
+        stream => {
+            /** gonna add your stream to my HTMLVideoElement */
+            remoteStream.srcObject = stream;
+        });
+
+    /** Events */
+    btnMakeOffer.onclick = event => {
+        const divLeft = document.querySelector('#divLeft');
+        const divRight = document.querySelector('#divRight');
+        divLeft.classList.add('bg-light');
+        divLeft.classList.remove('bg-info');
+        divRight.classList.remove('bg-light');
+        divRight.classList.add('bg-info');
+        btnMakeOffer.disabled = true;
+        /** Send an offer to the other peer */
+        rtcLeftClient.doCall();
+        btnSendData.disabled = false;
     };
 
-    /** Event Handlers */
-    btnJoin.onclick = () => {
-        if (txtAlias.value) {
-            state.alias = txtAlias.value;
-            socket.emit('join', state.alias);
-            userOverlay.classList.add('hide');
-        }
+    btnSendData.onclick = event => {
+        /** Data Channel is created, you can send whatever you want */
+        rtcRightClient.send('hey can you add some style to your video?');
     };
 
-    const btnCall_onClick = (e) => {
-        if (state.isAvailable) {
-            const userId = e.srcElement.getAttribute('data-id');
-            navigator.mediaDevices.getUserMedia({
-                audio: true,
-                video: true
-            }).then(stream => {
-                localVideo.srcObject = stream;
-                RTCClient.addLocalStream(stream);
-                state.peerId = userId;
-                state.isAvailable = false;
-                state.isInitiator = true;
-                socket.emit('call', state.peerId);
-            });
-        }
-    };
-
-    /** Socket Listeners */
-    socket.on('ping', () => socket.emit('pong'));
-
-    socket.on('online', data => {
-        ulOnlineUsers.innerHTML = data.reduce((previous, current) =>
-            previous + `<li class="online-user"><div class="user-avatar">${current.alias.substring(0,1).toUpperCase()}</div><div class="user-alias">${current.alias}</div><div data-id="${current.id}" class="user-action">Call</div></li>`, '');
-        const btnCall = document.querySelectorAll('.user-action');
-        btnCall.forEach(x => x.onclick = btnCall_onClick);
-    });
-
-    socket.on('rtcmessage', message => {
-        RTCClient.onMessage(message);
-    });
-
-    socket.on('created', room => {
-        state.room = room;
-        state.isInitiator = true;
-    });
-
-    socket.on('ready', () => {
-        if (state.isInitiator) {
-            RTCClient.doCall();
-            localVideoContainer.classList.add('on-call');
-        }
+    /** grab your user media */
+    navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true
+    }).then(stream => {
+        localStream.srcObject = stream;
+        /** Add your stream, soon you do the offer RTC gonna put your audio and video as ICE candidates */
+        rtcLeftClient.addLocalStream(stream);
     });
 
 })(window);
