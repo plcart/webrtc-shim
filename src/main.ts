@@ -6,9 +6,11 @@ const pc_config = {
 
 interface WebRTCShimPeerConnection extends RTCPeerConnection {
     createDataChannel(channel: string, constraint: any);
+    onclose: (this: WebRTCShimPeerConnection, ev: any) => any;
     ondatachannel: (this: RTCPeerConnection, ev: { channel: WebRTCShimDataChannel }) => any;
     onconnectionstatechange: (this: RTCPeerConnection, ev: any) => any;
     connectionState: string;
+    iceState: string;
 }
 
 interface WebRTCShimDataChannel {
@@ -61,12 +63,6 @@ export class WebRTCShim {
         pc.ondatachannel = event => {
             this.dataChannel = event.channel;
             this.configDataChannel();
-        }
-
-        pc.oniceconnectionstatechange = e => {
-            if (this.peerConnection && this.peerConnection.connectionState == 'disconnected') {
-                this.hangup();
-            }
         }
 
         return pc as WebRTCShimPeerConnection;
@@ -150,7 +146,7 @@ export class WebRTCShim {
                 this.peerConnection.addIceCandidate(candidate);
                 break;
             case 'bye':
-                this.stop();
+                this.hangup();
                 break;
         }
     }
