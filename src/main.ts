@@ -64,7 +64,7 @@ export class WebRTCShim {
         }
 
         pc.oniceconnectionstatechange = e => {
-            if (this.peerConnection && this.peerConnection.iceConnectionState == 'disconnected') {
+            if (this.peerConnection && this.peerConnection.connectionState == 'disconnected') {
                 this.hangup();
             }
         }
